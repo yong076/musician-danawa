@@ -56,14 +56,19 @@ cp .env.example .env.local
 
 ### 3. 데이터베이스 초기화
 
-Vercel Postgres 대시보드의 Query 탭에서 `db/schema.sql` 파일의 내용을 실행하세요.
-
-또는 로컬에서 Vercel CLI를 사용:
+편리한 초기화 스크립트를 제공합니다:
 
 ```bash
-npx vercel env pull .env.local
-# schema.sql 내용을 Vercel Postgres Query 탭에서 실행
+npm run db:init
 ```
+
+이 스크립트는 자동으로:
+- `.env.local`에서 데이터베이스 연결 정보 로드
+- `db/schema.sql` 파일 실행
+- 테이블 생성 (stores, categories, products, prices)
+- 10개의 초기 카테고리 데이터 삽입
+
+또는 Vercel Postgres 대시보드의 Query 탭에서 `db/schema.sql` 파일의 내용을 직접 실행할 수도 있습니다.
 
 ### 4. 개발 서버 실행
 
