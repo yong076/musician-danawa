@@ -40,6 +40,17 @@ export interface Price {
   scraped_at: Date;
 }
 
+export interface ProductGroup {
+  id: number;
+  normalized_name: string;
+  normalized_brand?: string;
+  normalized_model?: string;
+  category_id?: number;
+  specs?: any;
+  created_at: Date;
+  updated_at: Date;
+}
+
 export interface ProductWithPrice extends Product {
   category_name?: string;
   min_price?: number;
@@ -47,10 +58,25 @@ export interface ProductWithPrice extends Product {
   price_count?: number;
 }
 
+export interface ProductGroupWithPrice {
+  id: number;
+  name: string;
+  brand?: string;
+  model?: string;
+  category_id?: number;
+  category_name?: string;
+  min_price?: number;
+  max_price?: number;
+  store_count?: number;
+  image_url?: string;
+}
+
 export interface PriceWithDetails extends Price {
   product_name: string;
   product_brand?: string;
+  image_url?: string;
   store_name: string;
+  website_url?: string;
 }
 
 // 데이터베이스 초기화
@@ -81,7 +107,121 @@ export async function getStores(): Promise<Store[]> {
   return result.rows as Store[];
 }
 
-// 제품 검색
+// 제품 그룹 검색 (추천 방식)
+export async function searchProductGroups(
+  query?: string,
+  categoryId?: number,
+  brand?: string,
+  minPrice?: number,
+  maxPrice?: number,
+  limit: number = 50
+): Promise<ProductGroupWithPrice[]> {
+  const conditions = [];
+  const params: any = {};
+
+  if (categoryId) {
+    conditions.push('pg.category_id = ' + categoryId);
+  }
+
+  if (brand) {
+    conditions.push(`pg.normalized_brand ILIKE '%${brand}%'`);
+  }
+
+  if (query) {
+    conditions.push(`(pg.normalized_name ILIKE '%${query}%' OR pg.normalized_brand ILIKE '%${query}%' OR pg.normalized_model ILIKE '%${query}%')`);
+  }
+
+  const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
+  const havingConditions = [];
+
+  if (minPrice !== undefined) {
+    havingConditions.push(`MIN(pr.price) >= ${minPrice}`);
+  }
+
+  if (maxPrice !== undefined) {
+    havingConditions.push(`MAX(pr.price) <= ${maxPrice}`);
+  }
+
+  const havingClause = havingConditions.length > 0 ? 'HAVING ' + havingConditions.join(' AND ') : '';
+
+  const queryText = `
+    SELECT
+      pg.id,
+      pg.normalized_name as name,
+      pg.normalized_brand as brand,
+      pg.normalized_model as model,
+      pg.category_id,
+      c.name as category_name,
+      MIN(pr.price) as min_price,
+      MAX(pr.price) as max_price,
+      COUNT(DISTINCT s.id) as store_count,
+      MIN(p.image_url) as image_url
+    FROM product_groups pg
+    LEFT JOIN product_group_mappings pgm ON pg.id = pgm.group_id
+    LEFT JOIN products p ON pgm.product_id = p.id
+    LEFT JOIN prices pr ON p.id = pr.product_id AND pr.in_stock = true
+    LEFT JOIN stores s ON pr.store_id = s.id
+    LEFT JOIN categories c ON pg.category_id = c.id
+    ${whereClause}
+    GROUP BY pg.id, pg.normalized_name, pg.normalized_brand, pg.normalized_model, pg.category_id, c.name
+    ${havingClause}
+    ORDER BY min_price ASC NULLS LAST
+    LIMIT ${limit}
+  `;
+
+  const result = await sql.query(queryText);
+  return result.rows as ProductGroupWithPrice[];
+}
+
+// 단일 제품 그룹 조회
+export async function getProductGroup(groupId: number): Promise<ProductGroupWithPrice | null> {
+  const result = await sql`
+    SELECT
+      pg.id,
+      pg.normalized_name as name,
+      pg.normalized_brand as brand,
+      pg.normalized_model as model,
+      pg.category_id,
+      pg.specs,
+      c.name as category_name,
+      MIN(pr.price) as min_price,
+      MAX(pr.price) as max_price,
+      COUNT(DISTINCT s.id) as store_count,
+      MIN(p.image_url) as image_url
+    FROM product_groups pg
+    LEFT JOIN product_group_mappings pgm ON pg.id = pgm.group_id
+    LEFT JOIN products p ON pgm.product_id = p.id
+    LEFT JOIN prices pr ON p.id = pr.product_id AND pr.in_stock = true
+    LEFT JOIN stores s ON pr.store_id = s.id
+    LEFT JOIN categories c ON pg.category_id = c.id
+    WHERE pg.id = ${groupId}
+    GROUP BY pg.id, pg.normalized_name, pg.normalized_brand, pg.normalized_model, pg.category_id, pg.specs, c.name
+  `;
+
+  return result.rows[0] as ProductGroupWithPrice || null;
+}
+
+// 제품 그룹의 모든 가격 조회
+export async function getProductGroupPrices(groupId: number): Promise<PriceWithDetails[]> {
+  const result = await sql`
+    SELECT
+      pr.*,
+      p.name as product_name,
+      p.brand as product_brand,
+      p.image_url,
+      s.name as store_name,
+      s.website_url
+    FROM prices pr
+    JOIN products p ON pr.product_id = p.id
+    JOIN stores s ON pr.store_id = s.id
+    JOIN product_group_mappings pgm ON p.id = pgm.product_id
+    WHERE pgm.group_id = ${groupId} AND pr.in_stock = true
+    ORDER BY pr.price ASC
+  `;
+  return result.rows as PriceWithDetails[];
+}
+
+// 제품 검색 (기존 방식 - 호환성을 위해 유지)
 export async function searchProducts(query: string, categoryId?: number): Promise<ProductWithPrice[]> {
   let result;
 

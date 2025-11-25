@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Header } from "./components/Header";
 
 export const metadata: Metadata = {
-  title: "뮤지션 다나와 - 악기 가격 비교",
-  description: "한국의 모든 악기 상점을 비교하여 최저가를 찾아보세요",
+  title: "기타비교 - 일렉기타 가격 비교 플랫폼",
+  description: "국내 주요 악기 쇼핑몰 10곳의 일렉기타 가격을 한눈에 비교하고 최저가를 찾아보세요",
 };
 
 export default function RootLayout({
@@ -13,7 +14,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body>
+      <body className="antialiased">
+        <Header />
         {children}
       </body>
     </html>

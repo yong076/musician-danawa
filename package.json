@@ -3,17 +3,34 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3002",
+    "dev": "next dev -p 8080",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:init": "node scripts/init-db.mjs"
+    "db:init": "node scripts/init-db.mjs",
+    "db:sample": "node scripts/generate-sample-data.mjs",
+    "crawl:test": "node scripts/test-crawl.mjs",
+    "crawl:normalize": "npx tsx scripts/run-normalization.mjs",
+    "crawl:match": "npx tsx scripts/run-matching.mjs",
+    "crawl:pipeline": "node scripts/crawl-pipeline.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.0",
+    "@radix-ui/react-slot": "^1.2.4",
     "@vercel/postgres": "^0.10.0",
+    "axios": "^1.13.2",
+    "cheerio": "^1.1.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "express": "^5.1.0",
+    "lucide-react": "^0.554.0",
     "next": "16.0.3",
+    "pg": "^8.16.3",
+    "puppeteer": "^24.31.0",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "tailwind-merge": "^3.4.0",
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -24,6 +41,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
     "tailwindcss": "^4",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }

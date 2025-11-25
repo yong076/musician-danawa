@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getProductPrices } from '@/db';
+import { getProductGroupPrices } from '@/db';
 
 export async function GET(
   request: NextRequest,
@@ -7,16 +7,16 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const productId = parseInt(id);
+    const productGroupId = parseInt(id);
 
-    if (isNaN(productId)) {
+    if (isNaN(productGroupId)) {
       return NextResponse.json(
-        { error: 'Invalid product ID' },
+        { error: 'Invalid product group ID' },
         { status: 400 }
       );
     }
 
-    const prices = await getProductPrices(productId);
+    const prices = await getProductGroupPrices(productGroupId);
 
     return NextResponse.json({ prices });
   } catch (error) {
